@@ -1,0 +1,177 @@
+<!doctype html>
+<html>
+<head>
+    <title>Expense Tracker</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h2>Expense Tracker</h2>
+
+    <div>
+        <form action="{{ url_for('logout') }}" method="post">
+            <button type="submit">Logout</button>
+        </form>
+    </div>
+
+    <div>
+        <h3>Add Expense</h3>
+        <form id="addExpenseForm">
+            <label for="category">Category:</label>
+            <input type="text" id="category" name="category" required><br>
+            <label for="amount">Amount:</label>
+            <input type="number" step="0.01" id="amount" name="amount" required><br>
+            <label for="comments">Comments:</label>
+            <input type="text" id="comments" name="comments"><br>
+            <input type="submit" value="Add Expense">
+        </form>
+    </div>
+
+    <div>
+        <h3>Expenses</h3>
+        <table id="expensesTable">
+            <thead>
+                <tr>
+                    <th>Category</th>
+                    <th>Amount</th>
+                    <th>Created At</th>
+                    <th>Updated At</th>
+                    <th>Comments</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+
+    <div>
+        <h3>Expense Distribution</h3>
+        <canvas id="expenseChart"></canvas>
+    </div>
+
+    <script>
+        document.getElementById('addExpenseForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const category = document.getElementById('category').value;
+            const amount = document.getElementById('amount').value;
+            const comments = document.getElementById('comments').value;
+            fetch('/add_expense', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category, amount, comments })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        loadExpenses();
+                        loadExpenseDistribution();
+                    }
+                });
+        });
+
+        function loadExpenses() {
+            fetch('/view_expenses')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.querySelector('#expensesTable tbody');
+                    tbody.innerHTML = '';
+                    data.forEach(expense => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${expense[1]}</td>
+                            <td>${expense[2]}</td>
+                            <td>${expense[3]}</td>
+                            <td>${expense[4]}</td>
+                            <td>${expense[5]}</td>
+                            <td>
+                                <button onclick="editExpense(${expense[0]})">Edit</button>
+                                <button onclick="deleteExpense(${expense[0]})">Delete</button>
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                });
+        }
+
+        function editExpense(id) {
+            const category = prompt('Enter new category:');
+            const amount = prompt('Enter new amount:');
+            const comments = prompt('Enter new comments:');
+            fetch(`/edit_expense/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category, amount, comments })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        loadExpenses();
+                        loadExpenseDistribution();
+                    }
+                });
+        }
+
+        function deleteExpense(id) {
+            fetch(`/delete_expense/${id}`, {
+                method: 'DELETE'
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        alert(data.message);
+                        loadExpenses();
+                        loadExpenseDistribution();
+                    }
+                });
+        }
+
+        function loadExpenseDistribution() {
+            fetch('/expense_distribution')
+                .then(response => response.json())
+                .then(data => {
+                    const labels = data.map(item => item[0]);
+                    const amounts = data.map(item => item[1]);
+                    const ctx = document.getElementById('expenseChart').getContext('2d');
+                    new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: labels,
+                            datasets: [{
+                                label: 'Expense Distribution',
+                                data: amounts,
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.2)',
+                                    'rgba(54, 162, 235, 0.2)',
+                                    'rgba(255, 206, 86, 0.2)',
+                                    'rgba(75, 192, 192, 0.2)',
+                                    'rgba(153, 102, 255, 0.2)',
+                                    'rgba(255, 159, 64, 0.2)'
+                                ],
+                                borderColor: [
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)',
+                                    'rgba(255, 206, 86, 1)',
+                                    'rgba(75, 192, 192, 1)',
+                                    'rgba(153, 102, 255, 1)',
+                                    'rgba(255, 159, 64, 1)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true
+                        }
+                    });
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            loadExpenses();
+            loadExpenseDistribution();
+        });
+    </script>
+</body>
+</html>

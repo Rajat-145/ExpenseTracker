@@ -8,10 +8,10 @@ app.secret_key = os.getenv('SECRET_KEY', 'your_secret_key')
 
 # Database configuration
 db_config = {
-    'user': os.getenv('DB_USER', 'root'),
-    'password': os.getenv('DB_PASSWORD', 'Pass@123'),
-    'host': os.getenv('DB_HOST', 'localhost'),
-    'database': os.getenv('DB_NAME', 'flask_app')
+    'user': os.getenv('DB_USER'),
+    'password': os.getenv('DB_PASSWORD'),
+    'host': os.getenv('DB_HOST'),
+    'database': os.getenv('DB_NAME')
 }
 
 # Database connection function
